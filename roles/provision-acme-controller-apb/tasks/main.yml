@@ -1,0 +1,164 @@
+##############################################################################
+## Provision acme-controller
+## This role executes much of the needed functionality to provision an
+## application using an Ansible Playbook Bundle.  Included in the comments
+## below are some sample resources for getting started deploying an application
+## to OpenShift.
+##############################################################################
+- name: create image stream
+  openshift_v1_image_stream:
+    name: acme-controller
+    labels:
+      type: acme-controller
+    tags:
+    - annotations:
+        openshift.io/imported-from: ${DOCKER_IMAGE}:${DOCKER_IMAGE_TAG}
+      from:
+        kind: DockerImage
+        name: ${DOCKER_IMAGE}:${DOCKER_IMAGE_TAG}
+      import_policy:
+        scheduled: true
+      name: latest
+      reference_policy:
+        type: Source
+
+
+##############################################################################
+## An OpenShift Origin deployment configuration provides a replication
+## controller, spins up pods, and also provides the ability to transition from
+## one deployment of an image to a new one.
+## https://docs.openshift.org/latest/architecture/core_concepts/deployments.html#deployments-and-deployment-configurations
+##############################################################################
+- name: create deployment config
+  openshift_v1_deployment_config:
+    name: acme-controller
+    namespace: '{{ namespace }}'
+    labels:
+      app: acme-controller
+      service: acme-controller
+    replicas: 1
+    selector:
+      app: acme-controller
+      service: acme-controller
+    spec_strategy_type: Recreate
+    spec_strategy_active_deadline_seconds: 21600
+    spec_strategy_recreate_params:
+      timeout_seconds: 600
+    spec_template_metadata_labels:
+      app: acme-controller
+      service: acme-controller
+    containers:
+    - env:
+      - name: OPENSHIFT_ACME_ACMEURL
+        value: ${OPENSHIFT_ACME_ACMEURL}
+      - name: OPENSHIFT_ACME_LOGLEVEL
+        value: ${OPENSHIFT_ACME_LOGLEVEL}
+      - name: OPENSHIFT_ACME_SELFSERVICENAME
+        value: ${OPENSHIFT_ACME_SELFSERVICENAME}
+      image: acme-controller:latest
+      image_pull_policy: IfNotPresent
+      name: acme-controller
+      ports:
+      - container_port: 80
+        protocol: TCP
+      resources_limits:
+        cpu: '500m'
+        memory: '512Mi'
+      resources_requests:
+        cpu: '500m'
+        memory: '512Mi'
+      liveness_probe:
+        tcp_socket_port: 5000
+        initial_delay_seconds: 10
+        timeout_seconds: 2
+        period_seconds: 10
+        success_threshold: 1
+        failure_threshold: 3
+      readiness_probe:
+        tcp_socket_port: 5000
+        initial_delay_seconds: 10
+        timeout_seconds: 2
+        period_seconds: 10
+        success_threshold: 1
+        failure_threshold: 3
+      termination_message_path: /dev/termination-log
+      termination_message_policy: File
+    dns_policy: ClusterFirst
+    restart_policy: Always
+    scheduler_name: default-scheduler
+    security_context: {}
+    termination_grace_period_seconds: 30
+    service_account_name: acme-controller
+    test: false
+    triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      image_change_params:
+        automatic: true
+        container_names:
+        - acme-controller
+        from:
+          kind: ImageStreamTag
+          name: acme-controller:latest
+
+##############################################################################
+## A Kubernetes service serves as an internal load balancer.  It identifies a
+## set of replicated pods in order to proxy the connections it receives to them.
+## https://docs.openshift.org/latest/architecture/core_concepts/pods_and_services.html#services
+##############################################################################
+- name: create service account
+  k8s_v1_service_account:
+    name: acme-controller
+    namespace: '{{ namespace }}'
+
+- name: create cluster role
+  openshift_v1_cluster_role:
+    name: acme-controller
+  rules:
+  - api_groups:
+    - ""
+    - "route.openshift.io"
+    resources:
+    - endpoints
+    - endpoints/restricted
+    - events
+    - routes
+    - routes/custom-host
+    - routes/status
+    - secrets
+    - services
+    verbs:
+    - '*'
+  - api_groups:
+    - ""
+    resources:
+    - namespaces
+    verbs:
+    - get
+    - list
+    - watch
+
+- name: create cluster role binding
+  openshift_v1_cluster_role_binding:
+    name: acme-controller
+    namespace: '{{ namespace }}'
+    role_ref_name: acme-controller
+    subjects:
+    - kind: ServiceAccount
+      name: acme-controller
+
+- name: create acme-controller service
+  k8s_v1_service:
+    name: acme-controller
+    namespace: '{{ namespace }}'
+    labels:
+      app: acme-controller
+      service: acme-controller
+    selector:
+      app: acme-controller
+      service: acme-controller
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      target_port: 5000
