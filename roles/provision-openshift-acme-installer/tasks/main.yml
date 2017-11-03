@@ -1,5 +1,5 @@
 ##############################################################################
-## Provision acme-controller
+## Provision openshift-acme-installer
 ## This role executes much of the needed functionality to provision an
 ## application using an Ansible Playbook Bundle.  Included in the comments
 ## below are some sample resources for getting started deploying an application
@@ -12,10 +12,10 @@
       type: acme-controller
     tags:
     - annotations:
-        openshift.io/imported-from: ${DOCKER_IMAGE}:${DOCKER_IMAGE_TAG}
+        openshift.io/imported-from: '{{ docker_image }}:{{ docker_image_tag }}'
       from:
         kind: DockerImage
-        name: ${DOCKER_IMAGE}:${DOCKER_IMAGE_TAG}
+        name: '{{ docker_image }}:{{ docker_image_tag }}'
       import_policy:
         scheduled: true
       name: latest
@@ -50,11 +50,11 @@
     containers:
     - env:
       - name: OPENSHIFT_ACME_ACMEURL
-        value: ${OPENSHIFT_ACME_ACMEURL}
+        value: '{{ acme_url }}'
       - name: OPENSHIFT_ACME_LOGLEVEL
-        value: ${OPENSHIFT_ACME_LOGLEVEL}
+        value: '{{ acme_loglevel }}'
       - name: OPENSHIFT_ACME_SELFSERVICENAME
-        value: ${OPENSHIFT_ACME_SELFSERVICENAME}
+        value: '{{ acme_selfservicename }}'
       image: acme-controller:latest
       image_pull_policy: IfNotPresent
       name: acme-controller
