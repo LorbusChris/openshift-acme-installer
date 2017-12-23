@@ -6,34 +6,19 @@ An Ansible Playbook Bundle (APB) for deploying the [OpenShift ACME Controller](h
 
 An OpenShift cluster. (e.g. `oc cluster up`)
 
-## Building the installer
-
-```bash
-apb build
-```
-
 ## Installing OpenShift ACME
 
-Before installing, you must be logged in with `cluster-admin` privileges
 ```bash
 # login as a user with cluster-admin
 oc login -u system:admin
+# provision openshift-acme
+docker run --rm --net=host -v $HOME/.kube:/opt/apb/.kube:z -u $UID docker.io/lorbus/openshift-acme-installer provision -v
 ```
 
-You can docker run the ASB.  Assuming the installer was built with the default tag of `openshift-acme-installer`, the basic installation of ASB looks like:
+You can override default variables by using `--extra-vars`.
+For example, to use the Let's Encrypt Live Endpoint (instead of the default Staging one) for production deployments, run:
 ```bash
-docker run --rm --net=host -v $HOME/.kube:/opt/apb/.kube:z -u $UID openshift-acme-installer provision
-```
-
-You can pass in more variables to the command as you would when running an Ansible playbook, such as:
-
-Running with verbose output:
-```bash
-docker run --rm --net=host -v $HOME/.kube:/opt/apb/.kube:z -u $UID openshift-acme-installer provision -v
-```
-Overriding default one ore more variables using `--extra-vars`:
-```bash
-docker run --rm --net=host -v $HOME/.kube:/opt/apb/.kube:z -u $UID openshift-acme-installer provision --extra-vars "acme_selfservicename=acme-controller"
+docker run --rm --net=host -v $HOME/.kube:/opt/apb/.kube:z -u $UID docker.io/lorbus/openshift-acme-installer provision --extra-vars "acme_url=https://acme-v01.api.letsencrypt.org/directory"
 ```
 
 #### Available variables
@@ -49,6 +34,6 @@ docker run --rm --net=host -v $HOME/.kube:/opt/apb/.kube:z -u $UID openshift-acm
 ```bash
 # login as a user with cluster-admin
 oc login -u system:admin
-# assuming the installer has been tagged as asb-installer
-docker run --rm --net=host -v $HOME/.kube:/opt/apb/.kube:z -u $UID openshift-acme-installer deprovision
+# deprovision openshift-acme
+docker run --rm --net=host -v $HOME/.kube:/opt/apb/.kube:z -u $UID docker.io/lorbus/openshift-acme-installer deprovision
 ```

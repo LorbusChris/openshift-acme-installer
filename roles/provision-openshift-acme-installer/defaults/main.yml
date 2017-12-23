@@ -1,0 +1,9 @@
+---
+namespace: acme
+
+acme_url: https://acme-staging.api.letsencrypt.org/directory
+acme_loglevel: "8"
+acme_selfservicename: acme-controller
+
+docker_image: docker.io/tnozicka/openshift-acme
+docker_image_tag: latest

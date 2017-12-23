@@ -10,33 +10,4 @@ plans:
     description: This default plan deploys openshift-acme
     free: True
     metadata: {}
-    parameters:
-      - name: acme_url
-        title: ACME URL
-        description: ACME Endpoint URL. Defaults to staging. Use https://acme-v01.api.letsencrypt.org/directory for production deployments.
-        default: https://acme-staging.api.letsencrypt.org/directory
-        type: string
-        required: true
-      - name: acme_loglevel
-        title: ACME Loglevel
-        default: "8"
-        type: string
-        required: true
-      - name: acme_selfservicename
-        title: ACME Selfservicename
-        description: Name of the service pointing to ACME controller
-        default: acme-controller
-        type: string
-        required: true
-      - name: docker_image
-        title: Docker Image
-        description: Docker Image of ACME controller
-        default: docker.io/tnozicka/openshift-acme
-        type: string
-        required: true
-      - name: docker_image_tag
-        title: Docker Image Tag
-        description: Docker Image Tag of ACME controller
-        default: latest
-        type: string
-        required: true
+    parameters: []
